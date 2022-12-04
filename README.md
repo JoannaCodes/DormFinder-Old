@@ -1,4 +1,4 @@
-# Dormitory-Finder-App
+Dormitory-Finder-App
 CPE Designa nd Practice 1
 
 # PUP-SIS Browser Extension: The Development of the Polytechnic University of the Philippines Student Information System Activity Checker
@@ -11,7 +11,4 @@ Sta. Mesa, Manila
 In Partial Fulfilment of the Requirements for the Degree
 in Bachelor of Science in Computer Engineering
 
-By
-
-Tricia C. Gilo
-Joanna Marie B. Lara
+By Tricia C. Gilo and Joanna Marie B. Lara
