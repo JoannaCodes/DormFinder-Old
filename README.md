@@ -1,7 +1,7 @@
 Dormitory-Finder-App
-CPE Designa nd Practice 1
+CPE Designa nd Practice 1 and 2
 
-# PUP-SIS Browser Extension: The Development of the Polytechnic University of the Philippines Student Information System Activity Checker
+# The Development of an Android-based Dormitory Finder System in Higher Education Institutions of Manila
 
 A Dissertation
 Presented to the Faculty of the Department of Computer Engineering
