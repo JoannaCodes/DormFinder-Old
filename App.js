@@ -6,18 +6,19 @@
  * @flow strict-local
  */
 
-import React from 'react'
 import 'react-native-gesture-handler'
-import { View, Text } from 'react-native';
-import { getFocusedRouteNameFromRoute, NavigationContainer } from '@react-navigation/native'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createStackNavigator } from '@react-navigation/stack'
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NativeBaseProvider, extendTheme } from "native-base"
+import { getFocusedRouteNameFromRoute, NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'
+import { NativeBaseProvider } from "native-base"
+import { View, Text, useColorScheme, Settings  } from 'react-native'
+import React from 'react'
 
-import ListingScreen from './src/screens/Listing';
-import InboxScreen from './src/screens/Inbox';
-import ProfileScreen from './src/screens/User';
-import ChatComponent from './src/components/Chat';
+import ChatComponent from './src/components/Chat'
+import InboxScreen from './src/screens/Inbox'
+import ListingScreen from './src/screens/Listing'
+import ProfileScreen from './src/screens/User'
+import SettingsComponent from './src/components/Settings'
 
 function AppScreen() {
   return (
@@ -32,7 +33,7 @@ const AppStack = createStackNavigator();
 function AppStackScreen() {
   return (
     <AppStack.Navigator>
-      <AppStack.Screen name="App JS" component={AppScreen} />
+      <AppStack.Screen name='App JS' component={AppScreen} />
     </AppStack.Navigator>
   );
 }
@@ -42,7 +43,7 @@ const ListingStack = createStackNavigator();
 function ListingStackScreen() {
   return (
     <ListingStack.Navigator>
-      <ListingStack.Screen name="Dorm Listing" component={ListingScreen} />
+      <ListingStack.Screen name='Dorm Listing' component={ListingScreen} />
     </ListingStack.Navigator>
   );
 }
@@ -52,8 +53,8 @@ const InboxStack = createStackNavigator();
 function InboxStackScreen() {
   return (
     <InboxStack.Navigator>
-      <InboxStack.Screen name="Messages" component={InboxScreen} />
-      <InboxStack.Screen name="Chat" component={ChatComponent} />
+      <InboxStack.Screen name='Messages' component={InboxScreen} />
+      <InboxStack.Screen name='Chat' component={ChatComponent} />
     </InboxStack.Navigator>
   );
 }
@@ -63,7 +64,21 @@ const UserStack = createStackNavigator();
 function UserStackScreen() {
   return (
     <UserStack.Navigator>
-      <UserStack.Screen name="Profile" component={ProfileScreen} />
+      <UserStack.Screen name='Account Profile' component={ProfileScreen} />
+      <UserStack.Screen 
+        name="Settings" 
+        component={SettingsComponent} 
+        options={({ route }) => ({
+          headerShown: ((route) => {
+            const routeName = getFocusedRouteNameFromRoute(route) ?? ""
+            console.log(routeName)
+            if (routeName === 'Account Information' || routeName === 'Change Password') {
+              return false
+            }
+            return
+          })(route),
+        })}
+      />
     </UserStack.Navigator>
   );
 }
@@ -71,14 +86,22 @@ function UserStackScreen() {
 const Tab = createBottomTabNavigator();
 
 const App = () => {
+  const scheme = useColorScheme();
+
   return (
     <NativeBaseProvider>
-      <NavigationContainer>
-        <Tab.Navigator screenOptions={{ headerShown: false }} initialRouteName={AppStackScreen}>
-          <Tab.Screen name="App" component={AppStackScreen} />
-          {/* <Tab.Screen name="Listing" component={ListingStackScreen} /> */}
+      <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Tab.Navigator 
+          screenOptions={({route}) => ({
+            headerShown: false,
+            tabBarActiveTintColor: 'teal',
+          })}
+          initialRouteName={AppStackScreen}
+        >
+          <Tab.Screen name='App' component={AppStackScreen} />
+          <Tab.Screen name='Listing' component={ListingStackScreen} />
           <Tab.Screen 
-            name="Inbox" 
+            name='Inbox'
             component={InboxStackScreen} 
             options={({ route }) => ({
               tabBarStyle: ((route) => {
@@ -91,7 +114,20 @@ const App = () => {
               })(route),
             })}
           />
-          {/* <Tab.Screen name="User" component={UserStackScreen} /> */}
+          <Tab.Screen 
+            name='Profile'
+            component={UserStackScreen} 
+            options={({ route }) => ({
+              tabBarStyle: ((route) => {
+                const routeName = getFocusedRouteNameFromRoute(route) ?? ""
+                console.log(routeName)
+                if (routeName === 'Settings') {
+                  return { display: 'none' }
+                }
+                return
+              })(route),
+            })}
+          />
         </Tab.Navigator>
       </NavigationContainer>
     </NativeBaseProvider>
