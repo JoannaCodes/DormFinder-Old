@@ -1,7 +1,8 @@
-import { Button, Box, Center, FormControl, Icon, IconButton, Input, HStack, Select, TextArea, VStack } from 'native-base'
+import { Button, Box, Center, FormControl, Icon, IconButton, Input, HStack, Select, TextArea, VStack, Popover } from 'native-base'
 import { Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
-import CheckBox from '@react-native-community/checkbox';
+import CheckBox from '@react-native-community/checkbox'
+import MatIcons from 'react-native-vector-icons/MaterialIcons'
 import MultipleImagePicker from '@baronha/react-native-multiple-image-picker'
 import React from 'react'
 
@@ -33,43 +34,15 @@ const initialState = {
     ust: false,
     // Add more schools
   },
-  price: '$1000',
-  property_name: 'Holiday Inn'
+  price: '',
+  property_name: ''
 };
-
-const dummyData = [
-  {
-    id: 1,
-    name: "image card",
-    color: "orange",
-  },
-  {
-    id: 2,
-    name: "image card",
-    color: "red",
-  },
-  {
-    id: 3,
-    name: "image card",
-    color: "green",
-  },
-  {
-    id: 4,
-    name: "image card",
-    color: "blue",
-  },
-  {
-    id: 5,
-    name: "image card",
-    color: "teal",
-  },
-];
 
 function DormListingForm() {
   // States
   const [errors, setErrors] = React.useState({});
   const [formData, setFormData] = React.useState(initialState);
-  const [images, setImages] = React.useState(dummyData);
+  const [images, setImages] = React.useState([]);
 
   // Form Submission
   const onSubmit = () => {
@@ -81,22 +54,46 @@ function DormListingForm() {
   };
 
   // Image Picker
-  const removeItem = (id) => {
-    let arr = images.filter(function(item) {
-      return item.id !== id
-    })
-    setImages(arr);
+  const openPicker = async () => {
+    try {
+      const response = await MultipleImagePicker.openPicker({
+        selectedAssets: images,
+        isExportThumbnail: true,
+        maxVideo: 1,
+        maxSelectedAssets: 5,
+        mediaType: 'images',
+        usedCameraButton: true,
+        isCrop: true,
+        isCropCircle: true,
+      });
+      console.log('response: ', response);
+      setImages(response);
+    } catch (e) {
+      console.log(e.code, e.message);
+    }
   };
-  //make flatlist container disapper when no images
 
-  const renderItem = ({ item }) => {
+  const onDelete = (value) => {
+    const data = images.filter(
+      (item) =>
+        item?.localIdentifier &&
+        item?.localIdentifier !== value?.localIdentifier
+    );
+    setImages(data);
+  };
+
+  const renderItem = ({ item, index }) => {
     return (
       <TouchableOpacity
         style={styles.cardContainer}
-        onPress={() => removeItem(item.id)}
+        onPress={() => onDelete(item)}
+        activeOpacity={0.9}
       >
-        <Box style={[styles.card, {backgroundColor: item.color}]}>
-          <Text style={styles.text}>{item.name}</Text>
+        <Box style={styles.card}>
+          <Image
+            source={{ uri: 'file://' + (item.realPath)}}
+            style={styles.media}
+          />
         </Box>
       </TouchableOpacity>
     );
@@ -107,19 +104,41 @@ function DormListingForm() {
     <VStack w='100%' p='5' space={5} alignItems='center' justifyContent='center'>
       {/* Form */}
       <FormControl isRequired>
-        <FormControl.Label _text={{ bold: true }}>Property Images</FormControl.Label>
+        <FormControl.Label _text={{ bold: true }} alignItems="center">
+          <Popover 
+            placement={'right'}
+            trigger={triggerProps => {
+            return (
+              <IconButton
+                {...triggerProps} 
+                icon={<Icon as={<MatIcons name="help-outline" />} />}
+                _icon={{
+                  color: "teal.700",
+                  size: "md"
+                }}
+                p="0"
+                mr="1"
+              />
+            )}}
+          >
+            <Popover.Content accessibilityLabel="Help" w="56">
+              <Popover.Arrow />
+              <Popover.Body>Tap image to remove it.</Popover.Body>
+            </Popover.Content>
+          </Popover>
+          Property Images
+        </FormControl.Label>
         <View style={styles.container}>
           <FlatList
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.flatList}
             horizontal={true}
             data={images}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item, index) => (item?.filename ?? item?.path) + index}
             renderItem={renderItem}
           />
         </View>
-        <FormControl.HelperText>Tap image to remove it</FormControl.HelperText>
-        <Button mt='5' colorScheme='teal'>
+        <Button mt='5' colorScheme='teal' onPress={openPicker}>
           Upload Image
         </Button>
       </FormControl>
@@ -188,13 +207,38 @@ function DormListingForm() {
 
       <FormControl isRequired>
         <FormControl.Label _text={{ bold: true }}>Location</FormControl.Label>
-        <Input onChangeText={value => setFormData(key => { return { ...key, location: { ...key.location, address:value } } })}/>
+        <Input 
+          onChangeText={value => setFormData(key => { return { ...key, location: { ...key.location, address:value } } })}
+          InputLeftElement={<Icon as={<MatIcons name="my-location" />} size={5} color={'teal.700'} ml="2"/>}
+        />
         {/* <Text>{`[value: ${formData.location.address}]`}</Text> */}
-        <FormControl.HelperText>Press 'Icon' to automaticaly detect address</FormControl.HelperText>
       </FormControl>
 
       <FormControl>
-        <FormControl.Label _text={{ bold: true }}>Nearby Universities/Colleges</FormControl.Label>
+        <FormControl.Label _text={{ bold: true }} alignItems="center">
+          <Popover 
+            placement={'right'}
+            trigger={triggerProps => {
+            return (
+              <IconButton
+                {...triggerProps} 
+                icon={<Icon as={<MatIcons name="help-outline" />} />}
+                _icon={{
+                  color: "teal.700",
+                  size: "md"
+                }}
+                p="0"
+                mr="1"
+              />
+            )}}
+          >
+            <Popover.Content accessibilityLabel="Help" w="56">
+              <Popover.Arrow />
+              <Popover.Body>Only Manila Based Higher Education Institutions</Popover.Body>
+            </Popover.Content>
+          </Popover>
+          Nearby Universities/Colleges
+        </FormControl.Label>
         <HStack space={5}>
           <View>
             <HStack alignItems='center'>
@@ -219,7 +263,6 @@ function DormListingForm() {
             </HStack>
           </View>
         </HStack>
-        <FormControl.HelperText>*Manila Based Higher Education Institutions</FormControl.HelperText>
       </FormControl>
 
       {/* Buttons */}
@@ -249,6 +292,8 @@ export default Listing
 
 const { height, width } = Dimensions.get('window');
 
+const IMAGE_WIDTH = (width - 24) / 3;
+
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#d3d3d3',
@@ -259,17 +304,21 @@ const styles = StyleSheet.create({
   flatList: {
     paddingHorizontal: 16,
     paddingVertical: 16,
+    height: width * 0.5,
   },
   cardContainer: {
-    height: 150,
+    height: '100%',
     marginRight: 8,
     width: width * 0.5,
   },
   card: {
-    borderRadius: 6,
-    height: 150,
-    padding: 10,
+    height: '100%',
     width: width * 0.5,
   },
-  text: { color: 'white', fontWeight: 'bold' }
+  media: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 6,
+    backgroundColor: 'teal',
+  },
 })
