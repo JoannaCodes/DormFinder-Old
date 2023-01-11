@@ -1,7 +1,7 @@
 import React from 'react'
 import { StyleSheet, TouchableOpacity, TextInput, View } from 'react-native'
 import { Button, Center, ChevronRightIcon, Divider, FormControl, Heading, Input, Modal, HStack, Text, VStack } from 'native-base';
-import { getFocusedRouteNameFromRoute, NavigationContainer, useNavigation } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack'
 
 function SettingsScreen() {
@@ -10,38 +10,43 @@ function SettingsScreen() {
   const [showAbout, setShowAbout] = React.useState(false);
 
   return (
-    <VStack space={5} p={5}>
+    <VStack>
       {/* Screens */}
-      <TouchableOpacity onPress={() => navigation.navigate('Account Information')}>
-        <HStack alignItems="center" justifyContent="space-between">
-          <Text fontSize="lg">Account Information</Text>
-          <ChevronRightIcon size="5" />
-        </HStack>
-      </TouchableOpacity>
-      <Divider _light={{ bg: "muted.800" }} _dark={{ bg: "muted.50" }} />
-
-      <TouchableOpacity onPress={() => navigation.navigate('Change Password')}>
-        <HStack alignItems="center" justifyContent="space-between">
-            <Text fontSize="lg">Change Password</Text>
+      <VStack space={5} p={5}>
+        <TouchableOpacity onPress={() => navigation.navigate('Account Information')}>
+          <HStack alignItems="center" justifyContent="space-between">
+            <Text fontSize="lg">Account Information</Text>
             <ChevronRightIcon size="5" />
-        </HStack>
-      </TouchableOpacity>
-      <Divider _light={{ bg: "muted.800" }} _dark={{ bg: "muted.50" }} />
+          </HStack>
+        </TouchableOpacity>
+        <Divider _light={{ bg: "muted.800" }} _dark={{ bg: "muted.50" }} />
+
+        <TouchableOpacity onPress={() => navigation.navigate('Change Password')}>
+          <HStack alignItems="center" justifyContent="space-between">
+              <Text fontSize="lg">Change Password</Text>
+              <ChevronRightIcon size="5" />
+          </HStack>
+        </TouchableOpacity>
+      </VStack>
+
+      <Divider _light={{ bg: "muted.300" }} _dark={{ bg: "muted.50" }} height={1}/>
 
       {/* Modals */}
-      <TouchableOpacity onPress={() => setShowContact(true)}>
-        <Text fontSize="lg">Contact Us</Text>
-      </TouchableOpacity>
-      <Divider _light={{ bg: "muted.800" }} _dark={{ bg: "muted.50" }} />
+      <VStack space={5} p={5}>
+        <TouchableOpacity onPress={() => setShowContact(true)}>
+          <Text fontSize="lg">Contact Us</Text>
+        </TouchableOpacity>
+        <Divider _light={{ bg: "muted.800" }} _dark={{ bg: "muted.50" }} />
 
-      <TouchableOpacity onPress={() => setShowAbout(true)}>
-        <Text fontSize="lg">About Us</Text>
-      </TouchableOpacity>
-      <Divider _light={{ bg: "muted.800" }} _dark={{ bg: "muted.50" }} />
+        <TouchableOpacity onPress={() => setShowAbout(true)}>
+          <Text fontSize="lg">About Us</Text>
+        </TouchableOpacity>
+        <Divider _light={{ bg: "muted.800" }} _dark={{ bg: "muted.50" }} />
 
-      <TouchableOpacity>
-        <Text fontSize="lg" >Log Out</Text>
-      </TouchableOpacity>
+        <TouchableOpacity>
+          <Text fontSize="lg" color={"danger.600"} bold={true}>Log Out</Text>
+        </TouchableOpacity>
+      </VStack>
 
       <Modal isOpen={showContact} onClose={() => setShowContact(false)}>
         <Modal.Content maxWidth="400px">
@@ -89,6 +94,7 @@ const userInitial = {
 
 function AccountInfoScreen() {
   const [userInfo, setUserInfo] = React.useState(userInitial);
+  
   return (
     <VStack p={5} space={5}>
       <FormControl>
@@ -183,8 +189,8 @@ const Settings = () => {
   return (
     <Stack.Navigator initialRouteName="UserSettings" >
       <Stack.Screen name="UserSettings" component={SettingsScreen} options={{ headerShown: false }}/>
-      <Stack.Screen name="Account Information" component={AccountInfoScreen} options={{ headerShown: true }}/>
-      <Stack.Screen name="Change Password" component={ChangePasswordScreen} options={{ headerShown: true }}/>
+      <Stack.Screen name="Account Information" component={AccountInfoScreen}/>
+      <Stack.Screen name="Change Password" component={ChangePasswordScreen}/>
     </Stack.Navigator>
   );
 }

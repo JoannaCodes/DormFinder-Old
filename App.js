@@ -12,6 +12,7 @@ import { createStackNavigator } from '@react-navigation/stack'
 import { getFocusedRouteNameFromRoute, NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'
 import { NativeBaseProvider } from "native-base"
 import { View, Text, useColorScheme, Settings  } from 'react-native'
+import MatIcons from 'react-native-vector-icons/MaterialIcons'
 import React from 'react'
 
 import ChatComponent from './src/components/Chat'
@@ -91,13 +92,25 @@ const App = () => {
   return (
     <NativeBaseProvider>
       <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Tab.Navigator 
-          screenOptions={({route}) => ({
-            headerShown: false,
-            tabBarActiveTintColor: 'teal',
-          })}
-          initialRouteName={AppStackScreen}
-        >
+        <Tab.Navigator initialRouteName={AppStackScreen}
+            screenOptions={({route}) => ({
+              headerShown: false,
+              tabBarIcon: ({ focused, color, size }) => {
+                let iconName;
+                
+                if (route.name === 'Home') {
+                  return <MatCommIcons name={'compass'} size={size} color={color} />;
+                } else if (route.name === 'Listing') {
+                  return <MatIcons name={'add-circle'} size={size} color={color} />;
+                } else if (route.name === 'Inbox') {
+                  return <MatIcons name={'inbox'} size={size} color={color} />;
+                } else if (route.name === 'Profile') {
+                  return <MatIcons name={'person'} size={size} color={color} />;
+                } // Add for other tabs
+              },
+              tabBarActiveTintColor: 'teal',
+            })}
+          >
           <Tab.Screen name='App' component={AppStackScreen} />
           <Tab.Screen name='Listing' component={ListingStackScreen} />
           <Tab.Screen 
