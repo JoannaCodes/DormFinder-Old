@@ -168,8 +168,14 @@ const App = () => {
             <Stack.Screen name='Main' component={RootNavigator}/>
           ) : (
             <>
-              <Stack.Screen name='Login' component={LoginScreen}/>
-              <Stack.Screen name='SignUp' component={SignUpScreen}/>
+              <Stack.Screen 
+              name='Login' 
+              component={LoginScreen}
+              />
+              <Stack.Screen 
+              name='SignUp' 
+              component={SignUpScreen}
+              />
             </>
           )}
         </Stack.Navigator>
