@@ -16,15 +16,18 @@ import MatIcons from 'react-native-vector-icons/MaterialIcons'
 import React from 'react'
 
 import ChatComponent from './src/components/Chat'
+import WishlistScreen from './src/screens/Wishlist'
 import InboxScreen from './src/screens/Inbox'
 import ListingScreen from './src/screens/Listing'
 import ProfileScreen from './src/screens/User'
 import SettingsComponent from './src/components/Settings'
+import LoginScreen from './src/screens/LoginScreen'
+import SignUpScreen from './src/screens/SignUpScreen'
 
 function AppScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>App JS Screen</Text>
+      <Text>App JS screen</Text>
     </View>
   );
 }
@@ -36,6 +39,16 @@ function AppStackScreen() {
     <AppStack.Navigator>
       <AppStack.Screen name='App JS' component={AppScreen} />
     </AppStack.Navigator>
+  );
+}
+
+const WishlistStack = createStackNavigator();
+
+function WishlistStackScreen() {
+  return (
+    <WishlistStack.Navigator>
+      <WishlistStack.Screen name='Dorm Wishlist' component={WishlistScreen} />
+    </WishlistStack.Navigator>
   );
 }
 
@@ -86,62 +99,80 @@ function UserStackScreen() {
 
 const Tab = createBottomTabNavigator();
 
+function RootNavigator() {
+  return (
+    <Tab.Navigator initialRouteName={AppStackScreen}
+      screenOptions={({route}) => ({
+        headerShown: false,
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
+          
+          if (route.name === 'Home') {
+            return <MatCommIcons name={'compass'} size={size} color={color} />;
+          } else if (route.name === 'Listing') {
+            return <MatIcons name={'add-circle'} size={size} color={color} />;
+          } else if (route.name === 'Inbox') {
+            return <MatIcons name={'inbox'} size={size} color={color} />;
+          } else if (route.name === 'Profile') {
+            return <MatIcons name={'person'} size={size} color={color} />;
+          } // Add for other tabs
+        },
+        tabBarActiveTintColor: 'teal',
+      })}
+    >
+    <Tab.Screen name='App' component={AppStackScreen} />
+    <Tab.Screen name='Listing' component={ListingStackScreen} />
+    <Tab.Screen 
+      name='Inbox'
+      component={InboxStackScreen} 
+      options={({ route }) => ({
+        tabBarStyle: ((route) => {
+          const routeName = getFocusedRouteNameFromRoute(route) ?? ""
+          console.log(routeName)
+          if (routeName === 'Chat') {
+            return { display: "none" }
+          }
+          return
+        })(route),
+      })}
+    />
+    <Tab.Screen 
+      name='Profile'
+      component={UserStackScreen} 
+      options={({ route }) => ({
+        tabBarStyle: ((route) => {
+          const routeName = getFocusedRouteNameFromRoute(route) ?? ""
+          console.log(routeName)
+          if (routeName === 'Settings') {
+            return { display: 'none' }
+          }
+          return
+        })(route),
+      })}
+    />
+  </Tab.Navigator>
+  );
+}
+
+const Stack = createStackNavigator();
+
 const App = () => {
   const scheme = useColorScheme();
+  const [isSignedIn, setIsSignedIn] = React.useState(false);
 
   return (
     <NativeBaseProvider>
       <NavigationContainer theme={scheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Tab.Navigator initialRouteName={AppStackScreen}
-            screenOptions={({route}) => ({
-              headerShown: false,
-              tabBarIcon: ({ focused, color, size }) => {
-                let iconName;
-                
-                if (route.name === 'Home') {
-                  return <MatCommIcons name={'compass'} size={size} color={color} />;
-                } else if (route.name === 'Listing') {
-                  return <MatIcons name={'add-circle'} size={size} color={color} />;
-                } else if (route.name === 'Inbox') {
-                  return <MatIcons name={'inbox'} size={size} color={color} />;
-                } else if (route.name === 'Profile') {
-                  return <MatIcons name={'person'} size={size} color={color} />;
-                } // Add for other tabs
-              },
-              tabBarActiveTintColor: 'teal',
-            })}
-          >
-          <Tab.Screen name='App' component={AppStackScreen} />
-          <Tab.Screen name='Listing' component={ListingStackScreen} />
-          <Tab.Screen 
-            name='Inbox'
-            component={InboxStackScreen} 
-            options={({ route }) => ({
-              tabBarStyle: ((route) => {
-                const routeName = getFocusedRouteNameFromRoute(route) ?? ""
-                console.log(routeName)
-                if (routeName === 'Chat') {
-                  return { display: "none" }
-                }
-                return
-              })(route),
-            })}
-          />
-          <Tab.Screen 
-            name='Profile'
-            component={UserStackScreen} 
-            options={({ route }) => ({
-              tabBarStyle: ((route) => {
-                const routeName = getFocusedRouteNameFromRoute(route) ?? ""
-                console.log(routeName)
-                if (routeName === 'Settings') {
-                  return { display: 'none' }
-                }
-                return
-              })(route),
-            })}
-          />
-        </Tab.Navigator>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {isSignedIn ? (
+            <Stack.Screen name='Main' component={RootNavigator}/>
+          ) : (
+            <>
+              <Stack.Screen name='Login' component={LoginScreen}/>
+              <Stack.Screen name='SignUp' component={SignUpScreen}/>
+            </>
+          )}
+        </Stack.Navigator>
       </NavigationContainer>
     </NativeBaseProvider>
   )
