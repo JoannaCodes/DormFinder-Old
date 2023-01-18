@@ -98,7 +98,7 @@ const SignUpForm = ({navigation}) => {
 
             <View style={styles.loginContainer}>
                 <Text>Already have an account?</Text>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={()=>navigation.goBack()}>
                     <Text style={{color:'#0E898B', fontWeight: 'bold'}}> Log In</Text>
                 </TouchableOpacity>
             </View>
@@ -108,5 +108,50 @@ const SignUpForm = ({navigation}) => {
         </View>
     )
 }
+
+const styles = StyleSheet.create({
+    wrapper: {
+        marginTop: 70,
+    },
+
+    inputField: {
+        height: 55,
+        borderWidth: 1.5,
+        borderColor: "#D9D9D9",
+        borderRadius: 10,
+        backgroundColor: '#FFFF',
+        marginTop: 10,
+        marginBottom: 10,
+        marginLeft: 30,
+        marginRight: 30,
+        paddingLeft: 16,
+
+    },
+
+    button: isValid => ({
+        backgroundColor: isValid ? '#0E898B' : '#91DDDE' ,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 42,
+        borderRadius: 10,
+        marginLeft: 30,
+        marginRight: 30,
+        marginTop: 10,
+    }),
+
+    buttonText: {
+        fontWeight:'600',
+        color: '#fff',
+        fontSize: 17,
+    },
+
+    loginContainer: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'center',
+        marginTop: 20,
+    }
+
+})
 
 export default SignUpForm
