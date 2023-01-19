@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
-import { View, Text, TextInput, StyleSheet,  Pressable, TouchableOpacity} from 'react-native'
+import { View, Text, TextInput, StyleSheet,  Pressable, TouchableOpacity, Alert } from 'react-native'
 
 import { Formik } from 'formik'
 import * as Yup from 'yup'
 import Validator from 'email-validator'
+
+import { firebase } from '../../../environment/config'
 
 const LoginForm = ({navigation}) => {
     const LoginFormSchema = Yup.object().shape({
@@ -13,12 +15,33 @@ const LoginForm = ({navigation}) => {
             .min(6, 'Your password has to have at least 8 characters'),
     })
 
+    const onLogin = async (email, password) => {
+        try {
+            await firebase.auth().signInWithEmailAndPassword(email, password)
+            console.log('Firebase Login Successful', email, password)
+        } catch (error) {
+            Alert.alert(
+                'Error',
+                'The password is invalid' + '\n\nCreate a new account?',
+                [
+                    {
+                        text: 'No',
+                        onPress: () => console.log('No'),
+                        style: 'cancel',
+                    },
+                    {text: 'Yes', onPress: () => navigation.push('SignUp')}
+                ]
+            )
+        }
+    }
+    
+
     return (
         <View style ={styles.wrapper}>
             <Formik
             initialValues={{email: '', password: '' }}
             onSubmit={values => {
-                console.log(values)
+                onLogin(values.email, values.password)
             }}
             validationSchema={LoginFormSchema}
             validateOnMount={true}
@@ -80,7 +103,7 @@ const LoginForm = ({navigation}) => {
 
             <View style={styles.signupContainer}>
                 <Text>Don't have an account?</Text>
-                <TouchableOpacity onPress={()=>navigation.push('SignUpScreen')}>
+                <TouchableOpacity onPress={()=>navigation.push('SignUp')}>
                     <Text style={{color:'#0E898B', fontWeight: 'bold'}}> Sign Up</Text>
                 </TouchableOpacity>
             </View>
