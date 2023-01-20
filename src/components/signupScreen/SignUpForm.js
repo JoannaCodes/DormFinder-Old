@@ -37,7 +37,7 @@ const SignUpForm = ({navigation}) => {
             if (error.code === 'auth/email-already-in-use') {
                 Alert.alert('Error', 'This email is already in use.')
             } else {
-                Alert.alert('Error', error.message)
+                Alert.alert('Error', 'Unable to Sign Up.')
             }
         }
     }
