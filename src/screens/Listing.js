@@ -1,57 +1,50 @@
-import { Button, Box, Center, FormControl, Icon, IconButton, Input, HStack, Select, TextArea, VStack, Popover } from 'native-base'
-import { Dimensions, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, Dimensions, FlatList, Image, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { Button, FormControl, HStack, Icon, IconButton, Input, Select, Text, TextArea, VStack } from 'native-base'
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view'
 import CheckBox from '@react-native-community/checkbox'
 import MatIcons from 'react-native-vector-icons/MaterialIcons'
 import MultipleImagePicker from '@baronha/react-native-multiple-image-picker'
 import React from 'react'
 
-const initialState = {
-  amenities: {
-    aircon: false,
-    kitchen: false,
-    laundromat: false,
-    lounge: false,
-    parking: false,
-    refridgerator: false,
-    sink: false,
-    studyarea: false,
-    wifi: false,
-    // Add more amenities
-  },
-  author_id: '',
-  description: '',
-  location: {
+import { db, storage } from '../../environment/config'
+import { ref as ref_db, push, set, child, update } from 'firebase/database'
+import { ref as ref_storage, uploadBytes } from 'firebase/storage'
+
+import * as Yup from 'yup'
+import { Formik } from 'formik'
+
+const DormForm = () => {
+  const initialState = {
     address: '',
-    latitude: 0,
-    longitude: 0,
-  },
-  nearby_school: {
-    dlsu: false,
-    feu: false,
-    pup: false,
-    up: false,
-    ust: false,
-    // Add more schools
-  },
-  price: '',
-  property_name: ''
-};
+    amenities: {
+      aircon: false,
+      kitchen: false,
+      cctv: false,
+      security: false,
+      parking: false,
+      refridgerator: false,
+      sink: false,
+      studyarea: false,
+      wifi: false,
+      // Add more amenities
+    },
+    authorId: '2a26304e-0a4e-47a3-9cfb-69107a3174ce',
+    description: '',
+    schools: {
+      dlsu: false,
+      feu: false,
+      pup: false,
+      up: false,
+      ust: false,
+      // Add more schools
+    },
+    price: '',
+    propertyName: '',
+  };
 
-function DormListingForm() {
   // States
-  const [errors, setErrors] = React.useState({});
-  const [formData, setFormData] = React.useState(initialState);
   const [images, setImages] = React.useState([]);
-
-  // Form Submission
-  const onSubmit = () => {
-    // firebase
-  };
-
-  const onReset = () => {
-
-  };
+  const [loading, setLoading] = React.useState(false);
 
   // Image Picker
   const openPicker = async () => {
@@ -66,8 +59,9 @@ function DormListingForm() {
         isCrop: true,
         isCropCircle: true,
       });
-      console.log('response: ', response);
+      console.log(response);
       setImages(response);
+      //.map((image) => { return image.fileName })
     } catch (e) {
       console.log(e.code, e.message);
     }
@@ -82,6 +76,7 @@ function DormListingForm() {
     setImages(data);
   };
 
+  // Flatlist Render
   const renderItem = ({ item, index }) => {
     return (
       <TouchableOpacity
@@ -89,221 +84,266 @@ function DormListingForm() {
         onPress={() => onDelete(item)}
         activeOpacity={0.9}
       >
-        <Box style={styles.card}>
+        <View style={styles.card}>
           <Image
-            source={{ uri: 'file://' + (item.realPath)}}
+            source={{ uri: item.path}}
             style={styles.media}
           />
-        </Box>
+        </View>
       </TouchableOpacity>
     );
   };
 
-  // Display
-  return (
-    <VStack w='100%' p='5' space={5} alignItems='center' justifyContent='center'>
-      {/* Form */}
-      <FormControl isRequired>
-        <FormControl.Label _text={{ bold: true }} alignItems="center">
-          <Popover 
-            placement={'right'}
-            trigger={triggerProps => {
-            return (
-              <IconButton
-                {...triggerProps} 
-                icon={<Icon as={<MatIcons name="help-outline" />} />}
-                _icon={{
-                  color: "teal.700",
-                  size: "md"
-                }}
-                p="0"
-                mr="1"
-              />
-            )}}
-          >
-            <Popover.Content accessibilityLabel="Help" w="56">
-              <Popover.Arrow />
-              <Popover.Body>Tap image to remove it.</Popover.Body>
-            </Popover.Content>
-          </Popover>
-          Property Images
-        </FormControl.Label>
-        <View style={styles.container}>
-          <FlatList
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.flatList}
-            horizontal={true}
-            data={images}
-            keyExtractor={(item, index) => (item?.filename ?? item?.path) + index}
-            renderItem={renderItem}
-          />
+  const emptyComponent = () => {
+    return (
+      <View style={styles.emptyComponent}>
+        <View alignItems='center'>
+          <Icon as={MatIcons} name='help-outline' size='2xl' color='muted.400'/>
+          <Text color={'muted.400'}>Tap image to remove it from list.</Text>
+          <Text color={'muted.400'} textAlign={'center'}>If no image is selected, the default image will be used.</Text>
         </View>
-        <Button mt='5' colorScheme='teal' onPress={openPicker}>
-          Upload Image
-        </Button>
-      </FormControl>
+      </View>
+    );
+  };
 
-      <FormControl isRequired>
-        <FormControl.Label _text={{ bold: true }}>Property Name</FormControl.Label>
-        <Input onChangeText={value => setFormData({ ...formData, property_name: value})}/>
-        {/* <Text>{`[value: ${formData.property_name}]`}</Text> */}
-      </FormControl>
+  // Form Handlers
+  const DormFormSchema = Yup.object().shape({
+    propertyName: Yup.string().required('This is required'),
+    price: Yup.string().required('This is required'),
+    description: Yup.string().required('This is required'),
+    address: Yup.string().required('This is required'),
+  })
 
-      <FormControl isRequired>
-        <FormControl.Label _text={{ bold: true }}>Description</FormControl.Label>
-        <TextArea 
-          onChangeText={value => setFormData({ ...formData, description: value})}
-          placeholder='Type all information that cannot be provided in the form'
-        />
-        {/* <Text>{`[value: ${formData.description}]`}</Text> */}
-      </FormControl>
+  const onSubmit = (values, actions) => {
+    const dormListRef = ref_db(db, 'dorms');
+    const newDormRef = push(dormListRef);
+    const dormKey = newDormRef.key;
 
-      <FormControl>
-        <FormControl.Label _text={{ bold: true }}>Amenities</FormControl.Label>
-        <HStack space={5}>
-          <View>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.amenities.aircon} onValueChange={value => setFormData(key => { return { ...key, amenities: { ...key.amenities, aircon:value } } })}/>
-              <Text>Air Conditioning</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.amenities.kitchen} onValueChange={value => setFormData(key => { return { ...key, amenities: { ...key.amenities, kitchen:value } } })}/>
-              <Text>Kitchen</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.amenities.laundromat} onValueChange={value => setFormData(key => { return { ...key, amenities: { ...key.amenities, laundromat:value } } })}/>
-              <Text>Laundromat</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.amenities.lounge} onValueChange={value => setFormData(key => { return { ...key, amenities: { ...key.amenities, lounge:value } } })}/>
-              <Text>Lounge</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.amenities.parking} onValueChange={value => setFormData(key => { return { ...key, amenities: { ...key.amenities, parking:value } } })}/>
-              <Text>Parking</Text>
-            </HStack>
-          </View>
+    setLoading(true);
 
-          <View>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.amenities.refridgerator} onValueChange={value => setFormData(key => { return { ...key, amenities: { ...key.amenities, refridgerator:value } } })}/>
-              <Text>Refridgerator</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.amenities.sink} onValueChange={value => setFormData(key => { return { ...key, amenities: { ...key.amenities, sink:value } } })}/>
-              <Text>Sink</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.amenities.studyarea} onValueChange={value => setFormData(key => { return { ...key, amenities: { ...key.amenities, studyarea:value } } })}/>
-              <Text>Study Area</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.amenities.wifi} onValueChange={value => setFormData(key => { return { ...key, amenities: { ...key.amenities, wifi:value } } })}/>
-              <Text>WiFi</Text>
-            </HStack>
-          </View>
-        </HStack>
-      </FormControl>
+    try {
+      // Database
+      set(newDormRef, {
+        amenities: values.amenities,
+        author_id: values.authorId,
+        description: values.description,
+        location: {
+          address: values.address,
+          longitude: 0,
+          latitude: 0,
+        },
+        nearby_school: values.schools,
+        price: values.price,
+        property_name: values.propertyName,
+      }).then((snapshot) => {
+        // Storage
+        images.map((image) => {
+          const metadata = {
+            contentType: image.mime,
+          };
 
-      <FormControl isRequired>
-        <FormControl.Label _text={{ bold: true }}>Location</FormControl.Label>
-        <Input 
-          onChangeText={value => setFormData(key => { return { ...key, location: { ...key.location, address:value } } })}
-          InputLeftElement={<Icon as={<MatIcons name="my-location" />} size={5} color={'teal.700'} ml="2"/>}
-        />
-        {/* <Text>{`[value: ${formData.location.address}]`}</Text> */}
-      </FormControl>
+          const dormImagesRef = ref_storage(storage, `dorm-images/${dormKey}/${image.localIdentifier}`);
+          uploadBytes(dormImagesRef, image.path, metadata).then((snapshot) => {
+            console.log('Uploaded image');
+          });
+        });
 
-      <FormControl>
-        <FormControl.Label _text={{ bold: true }} alignItems="center">
-          <Popover 
-            placement={'right'}
-            trigger={triggerProps => {
-            return (
-              <IconButton
-                {...triggerProps} 
-                icon={<Icon as={<MatIcons name="help-outline" />} />}
-                _icon={{
-                  color: "teal.700",
-                  size: "md"
-                }}
-                p="0"
-                mr="1"
-              />
-            )}}
-          >
-            <Popover.Content accessibilityLabel="Help" w="56">
-              <Popover.Arrow />
-              <Popover.Body>Only Manila Based Higher Education Institutions</Popover.Body>
-            </Popover.Content>
-          </Popover>
-          Nearby Universities/Colleges
-        </FormControl.Label>
-        <HStack space={5}>
-          <View>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.nearby_school.dlsu} onValueChange={value => setFormData(key => { return { ...key, nearby_school: { ...key.nearby_school, dlsu:value } } })}/>
-              <Text>DLSU</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.nearby_school.feu} onValueChange={value => setFormData(key => { return { ...key, nearby_school: { ...key.nearby_school, feu:value } } })}/>
-              <Text>FEU</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.nearby_school.pup} onValueChange={value => setFormData(key => { return { ...key, nearby_school: { ...key.nearby_school, pup:value } } })}/>
-              <Text>PUP</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.nearby_school.up} onValueChange={value => setFormData(key => { return { ...key, nearby_school: { ...key.nearby_school, up:value } } })}/>
-              <Text>UP</Text>
-            </HStack>
-            <HStack alignItems='center'>
-              <CheckBox value={formData.nearby_school.ust} onValueChange={value => setFormData(key => { return { ...key, nearby_school: { ...key.nearby_school, ust:value } } })}/>
-              <Text>UST</Text>
-            </HStack>
-          </View>
-        </HStack>
-      </FormControl>
+        setLoading(false);
+        Alert.alert('Message', 'Dorm Listed Successfully!', [
+          {text: 'OK', onPress: () => {
+            actions.resetForm();
+            setImages([]);
+          }},
+        ]);
+      });
+    } catch (error) {
+      Alert.alert('Message', 'An error occured. Please try again later.')
+      console.log(error);
+    };
+  };
 
-      {/* Buttons */}
-      <HStack p={3} space={5} alignItems='center' justifyContent='space-between'>
-        <Button w='50%' colorScheme='teal'>
-          Submit
-        </Button>
-        <Button w='50%' colorScheme="teal">
-          Reset
-        </Button>
-      </HStack>
-    </VStack>
+  return (
+    <View>
+      <KeyboardAwareScrollView>
+        <Formik
+          initialValues={initialState}
+          onSubmit={onSubmit}
+          onReset={() => { setImages([]); }}
+          validateOnMount={true}
+          validationSchema={DormFormSchema}
+        >
+          {({ handleChange, handleBlur, handleSubmit, handleReset, setFieldValue, values, errors}) => (
+            <VStack w='100%' p='5' space={5} alignItems='center' justifyContent='center'>
+              <FormControl>
+                <FormControl.Label _text={{ bold: true }} alignItems="flex-end">Property Images</FormControl.Label>
+                <View style={styles.container} >
+                  <FlatList
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.flatList}
+                    horizontal={true}
+                    data={images}
+                    keyExtractor={(item, index) => (item?.fileName ?? item?.path) + index}
+                    renderItem={renderItem}
+                    ListEmptyComponent={emptyComponent}
+                  />
+                </View>
+                <Button mt='5' colorScheme='teal' onPress={openPicker}>Select Images</Button>
+              </FormControl>
+              
+              <FormControl isRequired isInvalid={'propertyName' in errors}>
+                <FormControl.Label _text={{ bold: true }}>Property Name</FormControl.Label>
+                <Input bg={'light.50'} 
+                  value={values.propertyName} 
+                  onBlur={handleBlur('propertyName')} 
+                  onChangeText={handleChange('propertyName')}
+                />
+                <FormControl.ErrorMessage>{errors.propertyName}</FormControl.ErrorMessage>
+              </FormControl>
+
+              <FormControl isRequired isInvalid={'price' in errors}>
+                <FormControl.Label _text={{ bold: true }}>Price</FormControl.Label>
+                <Input bg={'light.50'} keyboardType='numeric'
+                  value={values.price} 
+                  onBlur={handleBlur('price')} 
+                  onChangeText={handleChange('price')}
+                />
+                  <FormControl.ErrorMessage>{errors.price}</FormControl.ErrorMessage>
+              </FormControl>
+
+              <FormControl isRequired isInvalid={'description' in errors}>
+                <FormControl.Label _text={{ bold: true }}>Description</FormControl.Label>
+                <TextArea bg={'light.50'} placeholder='Type all information that cannot be provided in the form'
+                  value={values.description}  
+                  onBlur={handleBlur('description')} 
+                  onChangeText={handleChange('description')}
+                />
+                <FormControl.ErrorMessage>{errors.description}</FormControl.ErrorMessage>
+              </FormControl>
+
+              <FormControl isRequired isInvalid={'address' in errors}>
+                <FormControl.Label _text={{ bold: true }}>Address</FormControl.Label>
+                <Input bg={'light.50'}
+                  value={values.address}  
+                  onBlur={handleBlur('address')} 
+                  onChangeText={handleChange('address')}
+                />
+                <FormControl.ErrorMessage>{errors.address}</FormControl.ErrorMessage>
+              </FormControl>
+
+              <FormControl>
+                <FormControl.Label _text={{ bold: true }}>Amenities</FormControl.Label>
+                <HStack space={5}>
+                  <VStack>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.amenities.aircon} onValueChange={value => setFieldValue('amenities.aircon', value)}/>
+                      Air Conditioning
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.amenities.cctv} onValueChange={value => setFieldValue('amenities.cctv', value)}/>
+                      CCTV Coverage
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.amenities.kitchen} onValueChange={value => setFieldValue('amenities.kitchen', value)}/>
+                      Kitchen
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.amenities.parking} onValueChange={value => setFieldValue('amenities.parking', value)}/>
+                      Parking
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.amenities.refridgerator} onValueChange={value => setFieldValue('amenities.refridgerator', value)}/>
+                      Refridgerator
+                    </FormControl.Label>
+                  </VStack>
+
+                  <VStack>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.amenities.security} onValueChange={value => setFieldValue('amenities.security', value)}/>
+                      Security Guard
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.amenities.sink} onValueChange={value => setFieldValue('amenities.sink', value)}/>
+                      Sink
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.amenities.studyarea} onValueChange={value => setFieldValue('amenities.studyarea', value)}/>
+                      Study Area
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.amenities.wifi} onValueChange={value => setFieldValue('amenities.wifi', value)}/>
+                      Wifi
+                    </FormControl.Label>
+                  </VStack>
+                </HStack>
+              </FormControl>
+
+              <FormControl>
+                <FormControl.Label _text={{ bold: true }}>Nearby Universities and Colleges</FormControl.Label>
+                <HStack space={5}>
+                  <VStack>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.schools.dlsu} onValueChange={value => setFieldValue('schools.dlsu', value)}/>
+                      DLSU
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.schools.feu} onValueChange={value => setFieldValue('schools.feu', value)}/>
+                      FEU
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.schools.pup} onValueChange={value => setFieldValue('schools.pup', value)}/>
+                      PUP - Manila
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.schools.up} onValueChange={value => setFieldValue('schools.up', value)}/>
+                      UP - Manila
+                    </FormControl.Label>
+                    <FormControl.Label alignItems='center'>
+                      <CheckBox value={values.schools.ust} onValueChange={value => setFieldValue('schools.ust', value)}/>
+                      UST
+                    </FormControl.Label>
+                  </VStack>
+                </HStack>
+              </FormControl>
+
+              <HStack p={3} space={5} alignItems='center' justifyContent='space-between'>
+                <Button onPress={handleSubmit} w='50%' colorScheme='teal'>Submit</Button>
+                <Button onPress={handleReset} w='50%' colorScheme="teal">Reset</Button>
+              </HStack>
+            </VStack>
+          )}
+        </Formik>
+      </KeyboardAwareScrollView>
+      {loading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" visible={loading} color="white"/>
+          <Text color="white">Please Wait...</Text>
+        </View>
+      ) : null}
+    </View>
+    
   );
 }
 
-const Listing = () => {
-  return (
-    <KeyboardAwareScrollView>
-      <Center flex={1}>
-        <DormListingForm />
-      </Center>
-    </KeyboardAwareScrollView>
-  )
-}
-
-export default Listing
+export default DormForm
 
 const { height, width } = Dimensions.get('window');
-
-const IMAGE_WIDTH = (width - 24) / 3;
-
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#d3d3d3',
-    borderRadius: 10,
+    backgroundColor: 'white',
+    borderColor: '#d3d3d3',
+    borderWidth: 1,
+    borderRadius: 5,
     flex: 1,
     justifyContent: 'center',
   },
+  emptyComponent: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width: width - 64,
+  },
   flatList: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    padding: 10,
     height: width * 0.5,
   },
   cardContainer: {
@@ -318,7 +358,18 @@ const styles = StyleSheet.create({
   media: {
     width: '100%',
     height: '100%',
-    borderRadius: 6,
+    borderRadius: 5,
     backgroundColor: 'teal',
+  },
+  loading: {
+    flex: 1,
+    backgroundColor: 'rgba(52, 52, 52, 0.8)',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
 })
