@@ -1,30 +1,11 @@
 import { Avatar, Button, Box, Icon,  IconButton, HStack, Heading, Select, Text, VStack } from 'native-base'
-import { Alert, AspectRatio, Dimensions, FlatList, Image, StyleSheet, View, useWindowDimensions, TouchableOpacity } from 'react-native'
+import { ActivityIndicator, Alert, AspectRatio, Dimensions, FlatList, Image, StyleSheet, View, useWindowDimensions, TouchableOpacity } from 'react-native'
 import { TabBar, TabView, SceneMap } from 'react-native-tab-view'
 import { useNavigation } from '@react-navigation/native'
 import MatIcons from 'react-native-vector-icons/MaterialIcons'
 import React from 'react'
 
-const NBText = props => {
-  return <Text m="1" {...props} />;
-};
-
-const dormData = [
-  {
-    id: 1,
-    name: 'Property 1',
-    price: '$1000',
-    rating: '5',
-    color: 'black',
-  },
-  {
-    id: 2,
-    name: 'Property 2',
-    price: '$1000',
-    rating: '5',
-    color: 'black',
-  },
-];
+import { firebase } from '../../environment/config'
 
 const reviewData = [
   {
@@ -38,7 +19,36 @@ const reviewData = [
 ];
 
 function Listing() {
-  const [dorm, setdorm] = React.useState(dormData);
+  const [dorm, setdorm] = React.useState([]);
+  const [url, setUrl] = React.useState();
+  const [loading, setLoading] = React.useState(false);
+  var uid = 12345;
+
+  React.useEffect(()=>{
+    setLoading(true);
+    const dormsRef = firebase.database().ref('dorms');
+
+    dormsRef.on('value', (datasnap) => {
+      var dorms = [];
+      if (datasnap.exists()) {
+        datasnap.forEach(childsnap => {
+          if (childsnap.exists()){
+            const authorId = childsnap.val().authorId;
+            if (authorId === uid){
+              dorms.push({
+                key: childsnap.key,
+                value: childsnap.val(),
+              });
+            }
+          }
+        })
+        setdorm(dorms);
+        setLoading(false);
+      } else {
+        console.log("No data available");
+      }
+    });
+  },[]);
 
   const onDelete = () => {
     // firebase 
@@ -54,32 +64,40 @@ function Listing() {
 
   return (
     <View style={styles.cardContainer} alignItems={'flex-start'}>
-      <FlatList
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.flatList}
-        horizontal={false}
-        numColumns={2}
-        data={dorm}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <Box style={styles.dormCard} shadow='9'>
-            <VStack width={'100%'} height={'100%'}>
-              <Box style={{ backgroundColor: item.color, borderRadius: 2, }} width={'100%'} height={'50%'}></Box>
-              <VStack width={'100%'} height={'35%'}>
-                <Heading size="md" isTruncated>{item.name}</Heading>
-                <Text fontWeight="400">{item.price}</Text>
-                <Text fontWeight="400">{item.rating} Star</Text>
+      {loading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" visible={loading} color="#0f766e"/>
+        </View>
+      ):(
+        <FlatList
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.flatList}
+          horizontal={false}
+          numColumns={2}
+          data={dorm}
+          keyExtractor={item => item.key}
+          renderItem={({ item }) => (
+            <Box style={styles.dormCard} shadow='9'>
+              <VStack width={'100%'} height={'100%'}>
+                <Image style={{ borderRadius: 2, }} width={'100%'} height={'50%'}
+                  source={{uri: 'https://firebasestorage.googleapis.com/v0/b/dormfinder-5e354.appspot.com/o/dorm-images%2Fdefault-image.jpg?alt=media&token=34123c4a-03f9-4988-a888-b82dfe935f0c'}}
+                />
+                <VStack width={'100%'} height={'35%'}>
+                  <Heading size="md" isTruncated>{item.value.property_name}</Heading>
+                  <Text fontWeight="400">{item.value.price}</Text>
+                  <Text fontWeight="400">5 Star</Text>
+                </VStack>
+                <HStack width={'100%'} height={'15%'} alignItems={'center'} justifyContent={"space-between"}>
+                  <TouchableOpacity onPress={onDelete}><MatIcons name={'delete'} size={24} color={"red"}/></TouchableOpacity>
+                  <TouchableOpacity><MatIcons name={'mode-edit'} size={24} color={"teal"}/></TouchableOpacity>
+                </HStack>
               </VStack>
-              <HStack width={'100%'} height={'15%'} alignItems={'center'} justifyContent={"space-between"}>
-                <TouchableOpacity onPress={onDelete}><MatIcons name={'delete'} size={24} color={"red"}/></TouchableOpacity>
-                <TouchableOpacity><MatIcons name={'mode-edit'} size={24} color={"teal"}/></TouchableOpacity>
-              </HStack>
-            </VStack>
-          </Box>
-        )}
-      />
+            </Box>
+          )}
+        />
+      )}
     </View>
-  )
+  );
 }
 
 function Reviews() {
@@ -165,8 +183,8 @@ function UserProfile() {
       <HStack space={4} alignItems={'center'} justifyContent={'flex-start'}>
         <Avatar bg="teal.700" alignSelf="center" size="2xl" source={{ uri: "https://images.unsplash.com/photo-1510771463146-e89e6e86560e?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=627&q=80" }}></Avatar>
         <View>
-          <NBText fontSize="2xl" fontWeight="bold">Full name</NBText>
-          <NBText>@username</NBText>
+          <Text fontSize="2xl" fontWeight="bold">Full name</Text>
+          <Text>@username</Text>
         </View>
       </HStack>
       <IconButton 
@@ -221,5 +239,15 @@ const styles = StyleSheet.create({
   flatList: {
     paddingHorizontal: 16,
     paddingVertical: 16,
+  },
+  loading: {
+    flex: 1,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })
